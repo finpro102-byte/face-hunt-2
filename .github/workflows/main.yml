@@ -2,7 +2,6 @@ name: Build APK
 
 on:
   push:
-    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -13,25 +12,30 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
 
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true
 
-      - name: Accept Android licenses
-        run: yes | flutter doctor --android-licenses || true
+      - name: Prepare project structure
+        run: |
+          mkdir -p lib tools assets/faces
+          for f in main models game_screen face_provider; do
+            if [ -f "$f.dart" ] && [ ! -f "lib/$f.dart" ]; then cp "$f.dart" "lib/$f.dart"; fi
+          done
+          touch assets/faces/.gitkeep
+          flutter create --project-name face_hunt --org com.example --platforms=android .
+          rm -rf test
+          sed -i 's|<manifest xmlns:android="http://schemas.android.com/apk/res/android">|&\n    <uses-permission android:name="android.permission.INTERNET"/>|' android/app/src/main/AndroidManifest.xml
+          grep -n "INTERNET" android/app/src/main/AndroidManifest.xml
 
       - run: flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release
+      - run: flutter build apk --release
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: face-hunt-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
