@@ -1,0 +1,45 @@
+name: Download faces
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  faces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download faces
+        run: |
+          sudo apt-get install -y imagemagick
+          mkdir -p assets/faces tmp
+          N=100
+          got=0
+          tries=0
+          while [ "$got" -lt "$N" ] && [ "$tries" -lt 300 ]; do
+            tries=$((tries+1))
+            curl -sfL --max-time 30 -A "Mozilla/5.0" \
+              "https://thispersondoesnotexist.com/?t=$tries" -o tmp/raw.jpg || { sleep 2; continue; }
+            if ! file tmp/raw.jpg | grep -q "JPEG"; then sleep 2; continue; fi
+            h=$(md5sum tmp/raw.jpg | cut -d' ' -f1)
+            if [ -e "tmp/$h" ]; then sleep 1; continue; fi
+            touch "tmp/$h"
+            got=$((got+1))
+            convert tmp/raw.jpg -resize 512x512 -quality 80 \
+              "assets/faces/face_$(printf '%04d' "$got").jpg"
+            sleep 1
+          done
+          echo "Скачано уникальных лиц: $got"
+          rm -rf tmp
+          rm -f assets/faces/.gitkeep
+
+      - name: Commit faces
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add assets/faces
+          git commit -m "Add faces" || echo "nothing to commit"
+          git push
