@@ -30,7 +30,7 @@ abstract class FaceProvider {
 ///  - generated.photos (платный API, есть бесплатный тариф)
 ///  - свой StyleGAN2-ADA/StyleGAN3-сервис
 ///  - офлайн: AssetFaceProvider + tools/download_faces.sh
-class GanFaceProvider implements FaceProvider {
+class GanFaceProvider extends FaceProvider {
   GanFaceProvider({this.baseUrl = 'https://thispersondoesnotexist.com/'});
 
   final String baseUrl;
@@ -47,7 +47,7 @@ class GanFaceProvider implements FaceProvider {
 
 /// Лица из заранее скачанных файлов assets/faces/face_0001.jpg ...
 /// Полностью офлайн, мгновенная загрузка.
-class AssetFaceProvider implements FaceProvider {
+class AssetFaceProvider extends FaceProvider {
   AssetFaceProvider({required this.count}) : assert(count > 0);
 
   final int count;
